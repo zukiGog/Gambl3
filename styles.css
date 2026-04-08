@@ -1168,7 +1168,7 @@ select {
 
 .leaderboard-item {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto auto 1fr auto;
   gap: 12px;
   align-items: center;
   background: rgba(15, 30, 48, 0.95);

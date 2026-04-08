@@ -81,6 +81,19 @@
       </div>
     </div>
 
+    <div id="donation-overlay" class="overlay hidden">
+      <div class="login-panel">
+        <h2>Donate to <span id="donation-recipient"></span></h2>
+        <div class="input-group">
+          <label>Amount to donate</label>
+          <input id="donation-amount" type="number" min="0.01" step="0.01" placeholder="0.00" />
+        </div>
+        <button id="confirm-donation-button" class="primary-btn">Donate</button>
+        <button id="cancel-donation-button" class="small-btn">Cancel</button>
+        <p id="donation-error" class="muted"></p>
+      </div>
+    </div>
+
     <div class="app-shell">
       <header class="hero">
         <div>

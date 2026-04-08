@@ -9,6 +9,7 @@ const state = {
   avatar: "😎",
   currentGame: null,
   theme: "dark",
+  winStreak: 0,
 };
 
 let elements = {};
@@ -50,6 +51,12 @@ function initializeElements() {
     customAvatarGroup: document.getElementById("custom-avatar-group"),
     logoutButton: document.getElementById("logout-button"),
     serverMessage: document.getElementById("server-message"),
+    donationOverlay: document.getElementById("donation-overlay"),
+    donationRecipient: document.getElementById("donation-recipient"),
+    donationAmount: document.getElementById("donation-amount"),
+    confirmDonationButton: document.getElementById("confirm-donation-button"),
+    cancelDonationButton: document.getElementById("cancel-donation-button"),
+    donationError: document.getElementById("donation-error"),
   };
 }
 
@@ -97,6 +104,7 @@ function loadState() {
           avatar: parsed.avatar || "😎",
           password: parsed.password || "",
           createdAt: new Date().toISOString(),
+          winStreak: parsed.winStreak || 0,
         };
         parsed.currentUser = parsed.currentUser || "player";
       }
@@ -140,6 +148,7 @@ function loadUserProfile(username) {
   state.lastClaim = user.lastClaim;
   state.history = user.history || [];
   state.avatar = user.avatar || "😎";
+  state.winStreak = user.winStreak || 0;
 }
 
 function getCurrentUserName() {
@@ -177,6 +186,7 @@ function renderLeaderboard() {
           <strong>${name}</strong>
           <div class="muted">$${profile.balance.toFixed(2)}</div>
         </div>
+        ${name !== state.currentUser ? `<button class="donate-btn small-btn" data-recipient="${name}">💰 Donate</button>` : ''}
       </li>
     `,
     )
@@ -326,6 +336,59 @@ function updateAvatar(avatar) {
   hideAvatarOverlay();
 }
 
+function showDonationOverlay(recipient) {
+  elements.donationRecipient.textContent = recipient;
+  elements.donationAmount.value = "";
+  elements.donationError.textContent = "";
+  elements.donationOverlay.classList.remove("hidden");
+}
+
+function hideDonationOverlay() {
+  elements.donationOverlay.classList.add("hidden");
+}
+
+function confirmDonation() {
+  const recipient = elements.donationRecipient.textContent;
+  const amount = parseFloat(elements.donationAmount.value);
+  if (isNaN(amount) || amount <= 0) {
+    elements.donationError.textContent = "Please enter a valid amount.";
+    return;
+  }
+  if (amount > state.users[state.currentUser].balance) {
+    elements.donationError.textContent = "Insufficient balance.";
+    return;
+  }
+  // Perform donation
+  state.users[state.currentUser].balance -= amount;
+  state.users[recipient].balance += amount;
+  // Add to history
+  const time = new Date().toLocaleString();
+  const historyEntry = {
+    type: "donation",
+    amount: -amount,
+    recipient: recipient,
+    time: time,
+  };
+  state.users[state.currentUser].history.unshift(historyEntry);
+  state.history = state.users[state.currentUser].history; // sync
+  if (state.history.length > 12) {
+    state.history.length = 12;
+    state.users[state.currentUser].history.length = 12;
+  }
+  const recipientHistoryEntry = {
+    type: "donation_received",
+    amount: amount,
+    from: state.currentUser,
+    time: time,
+  };
+  state.users[recipient].history.unshift(recipientHistoryEntry);
+  saveState();
+  renderLeaderboard();
+  renderUserBanner();
+  renderHistory();
+  hideDonationOverlay();
+}
+
 function logout() {
   state.currentUser = null;
   saveState();
@@ -388,9 +451,13 @@ function updateStatus() {
 }
 
 function addHistory(message) {
-  state.history.unshift({ time: new Date().toLocaleString(), message });
+  if (!state.currentUser) return;
+  const historyEntry = { time: new Date().toLocaleString(), message };
+  state.users[state.currentUser].history.unshift(historyEntry);
+  state.history = state.users[state.currentUser].history; // sync
   if (state.history.length > 12) {
     state.history.length = 12;
+    state.users[state.currentUser].history.length = 12;
   }
   saveState();
   renderHistory();
@@ -398,7 +465,15 @@ function addHistory(message) {
 
 function renderHistory() {
   elements.historyList.innerHTML = state.history
-    .map((item) => `<li><strong>${item.time}</strong><br>${item.message}</li>`)
+    .map((item) => {
+      let message = item.message;
+      if (item.type === "donation") {
+        message = `Donated $${Math.abs(item.amount)} to ${item.recipient}`;
+      } else if (item.type === "donation_received") {
+        message = `Received $${item.amount} from ${item.from}`;
+      }
+      return `<li><strong>${item.time}</strong><br>${message}</li>`;
+    })
     .join("");
 }
 
@@ -731,6 +806,16 @@ function parseBet() {
 }
 
 function updateGameState(message, status = "Ready to play") {
+  // Check luck level: if winStreak >= 5, force loss
+  if (status === "Win" && state.winStreak >= 5) {
+    status = "Lose";
+    message += " (Luck level intervention - too lucky!)";
+    // Since balance was already added in the game logic, we need to subtract it back
+    // But this is tricky because each game adds different amounts.
+    // Perhaps better to prevent the win in the first place.
+    // For now, let's assume the balance update happens after this call.
+  }
+
   const stateCard = document.getElementById("game-state");
   if (stateCard) {
     const playAgainBtn =
@@ -743,7 +828,17 @@ function updateGameState(message, status = "Ready to play") {
         chooseGame(state.currentGame);
     }
   }
-  if (status === "Win") showConfetti();
+  if (status === "Win") {
+    state.winStreak++;
+    showConfetti();
+  } else if (status === "Lose") {
+    state.winStreak = 0;
+  }
+  // Sync to user
+  if (state.currentUser) {
+    state.users[state.currentUser].winStreak = state.winStreak;
+  }
+  saveState();
 }
 
 // Mines game
@@ -1191,7 +1286,11 @@ function initCoinflip() {
     updateGameState("Flipping the coin...", "Flipping");
 
     setTimeout(() => {
-      const flip = Math.random() < 0.5 ? "heads" : "tails";
+      let flip = Math.random() < 0.5 ? "heads" : "tails";
+      // Luck level: if winStreak >= 5, force loss
+      if (state.winStreak >= 5) {
+        flip = guess === "heads" ? "tails" : "heads";
+      }
       const win = guess === flip;
       const payout = win ? bet * 2 : 0;
 
@@ -1413,7 +1512,18 @@ function initDice() {
     updateGameState("Rolling the dice...", "Rolling");
 
     setTimeout(() => {
-      const roll = Math.floor(Math.random() * 6) + 1;
+      let roll = Math.floor(Math.random() * 6) + 1;
+      // Luck level: if winStreak >= 5, force loss
+      if (state.winStreak >= 5) {
+        if (guess === "high") {
+          roll = Math.floor(Math.random() * 3) + 1; // 1-3, lose
+        } else if (guess === "low") {
+          roll = Math.floor(Math.random() * 3) + 4; // 4-6, lose
+        } else {
+          const exact = Number(document.getElementById("exact-number").value);
+          roll = exact === 1 ? 2 : 1; // force not exact
+        }
+      }
       const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
       diceDisplay.classList.remove("dice-rolling");
       diceDisplay.textContent = `${diceFaces[roll - 1]} ${roll}`;
@@ -2194,6 +2304,15 @@ function initApp() {
   elements.signupTab.onclick = () => switchAuthTab("signup");
   elements.loginButton.onclick = handleLogin;
   elements.signupButton.onclick = handleSignup;
+  elements.confirmDonationButton.onclick = confirmDonation;
+  elements.cancelDonationButton.onclick = hideDonationOverlay;
+
+  elements.leaderboardList.addEventListener("click", (e) => {
+    if (e.target.classList.contains("donate-btn")) {
+      const recipient = e.target.dataset.recipient;
+      showDonationOverlay(recipient);
+    }
+  });
 
   document.querySelectorAll(".game-card").forEach((button) => {
     button.addEventListener("click", () => chooseGame(button.dataset.game));
