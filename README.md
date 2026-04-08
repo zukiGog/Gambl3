@@ -1,3 +1,7 @@
+https://zukigog.github.io/Gambl3/
+
+
+
 # Fake Casino Club
 
 A fun browser-based gambling website with fake money, daily streak rewards, and fourteen mini games.
