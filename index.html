@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fake Casino Club</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="login-overlay" class="overlay hidden">
+      <div class="login-panel">
+        <h2>Login or create an account</h2>
+        <div class="auth-tabs">
+          <button id="login-tab" class="auth-tab active">Login</button>
+          <button id="signup-tab" class="auth-tab">Sign Up</button>
+        </div>
+        <div id="login-form" class="auth-form">
+          <div class="input-group">
+            <label>Username</label>
+            <input id="login-username" type="text" autocomplete="username" />
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input
+              id="login-password"
+              type="password"
+              autocomplete="current-password"
+            />
+          </div>
+          <button id="login-button" class="primary-btn">Log In</button>
+        </div>
+        <div id="signup-form" class="auth-form hidden">
+          <div class="input-group">
+            <label>Username</label>
+            <input id="signup-username" type="text" autocomplete="username" />
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input
+              id="signup-password"
+              type="password"
+              autocomplete="new-password"
+            />
+          </div>
+          <div class="input-group">
+            <label>Profile avatar</label>
+            <select id="signup-avatar">
+              <option value="😎">😎 Cool</option>
+              <option value="🎰">🎰 Slots</option>
+              <option value="💎">💎 Diamond</option>
+              <option value="🃏">🃏 Joker</option>
+              <option value="🔥">🔥 Fire</option>
+            </select>
+          </div>
+          <button id="signup-button" class="primary-btn">Create Account</button>
+        </div>
+        <p id="auth-error" class="muted"></p>
+      </div>
+    </div>
+
+    <div id="avatar-overlay" class="overlay hidden">
+      <div class="login-panel">
+        <h2>Change Avatar</h2>
+        <div class="input-group">
+          <label>Select new avatar</label>
+          <select id="change-avatar-select">
+            <option value="😎">😎 Cool</option>
+            <option value="🎰">🎰 Slots</option>
+            <option value="💎">💎 Diamond</option>
+            <option value="🃏">🃏 Joker</option>
+            <option value="🔥">🔥 Fire</option>
+            <option value="custom">📷 Custom Image</option>
+          </select>
+        </div>
+        <div id="custom-avatar-group" class="input-group hidden">
+          <label>Upload custom image</label>
+          <input id="custom-avatar-input" type="file" accept="image/*" />
+        </div>
+        <button id="save-avatar-button" class="primary-btn">Save Avatar</button>
+        <button id="cancel-avatar-button" class="small-btn">Cancel</button>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <div class="logo">🎰 Fake Casino Club</div>
+          <p>
+            Play for fun with fake dollars, daily streak rewards, and fourteen
+            mini games.
+          </p>
+          <p id="server-message" class="muted">
+            Server event: welcome bonus party active!
+          </p>
+        </div>
+        <div class="status-card">
+          <p><strong>Player</strong></p>
+          <div class="profile-row">
+            <span id="user-avatar" class="profile-badge">😎</span>
+            <span id="user-name">Guest</span>
+          </div>
+          <p><strong>Balance</strong></p>
+          <h2 id="balance">$0</h2>
+          <p><strong>Streak</strong> <span id="streak">0</span> days</p>
+          <p><strong>Daily bonus</strong> <span id="daily-bonus">$0</span></p>
+          <button id="claim-button" class="primary-btn">
+            Claim Daily Bonus
+          </button>
+          <button id="change-avatar-button" class="small-btn">
+            Change Avatar
+          </button>
+          <button id="logout-button" class="small-btn">Logout</button>
+          <button id="theme-toggle" class="small-btn">🌙 Dark Mode</button>
+          <p id="claim-info" class="muted"></p>
+        </div>
+      </header>
+
+      <section class="game-menu">
+        <h2>Choose a game</h2>
+        <div class="game-grid">
+          <button class="game-card" data-game="mines">💣 Mines</button>
+          <button class="game-card" data-game="towers">🏰 Towers</button>
+          <button class="game-card" data-game="crash">💥 Crash</button>
+          <button class="game-card" data-game="plinko">🎯 Plinko</button>
+          <button class="game-card" data-game="dice">🎲 Dice</button>
+          <button class="game-card" data-game="blackjack">🃏 Blackjack</button>
+          <button class="game-card" data-game="coinflip">🪙 Coin Flip</button>
+          <button class="game-card" data-game="wheel">🎡 Spin Wheel</button>
+          <button class="game-card" data-game="slots">🎰 Slots</button>
+          <button class="game-card" data-game="roulette">🟢 Roulette</button>
+          <button class="game-card" data-game="scratch">🧧 Scratch Card</button>
+          <button class="game-card" data-game="keno">🎱 Keno</button>
+          <button class="game-card" data-game="baccarat">♠️ Baccarat</button>
+          <button class="game-card" data-game="treasure">
+            🏴 Treasure Hunt
+          </button>
+        </div>
+      </section>
+
+      <section class="leaderboard-panel">
+        <h2>Top 10 leaderboard</h2>
+        <ul id="leaderboard-list" class="leaderboard-list"></ul>
+      </section>
+
+      <main class="game-panel" id="game-panel">
+        <div class="game-header">
+          <h2 id="game-title">Start playing!</h2>
+          <p id="game-description">
+            Pick a game above to begin. Your fake money is safely stored in your
+            browser.
+          </p>
+        </div>
+        <div id="game-content"></div>
+      </main>
+
+      <section class="history-panel">
+        <h2>Recent activity</h2>
+        <ul id="history-list" class="history-list"></ul>
+      </section>
+
+      <footer class="footer">
+        <p>
+          All fake currency. This is just for fun—no real bets, no real money.
+        </p>
+      </footer>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
